@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
@@ -28,11 +28,8 @@ export default function ProductFilters({ categories }: ProductFiltersProps) {
     sortOrder: searchParams.get('sortOrder') || 'desc',
   })
 
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters((prev) => ({ ...prev, [key]: value }))
-  }
-
-  const applyFilters = () => {
+  // Real-time filter application with debouncing
+  useEffect(() => {
     const params = new URLSearchParams()
     
     if (filters.category) params.set('category', filters.category)
@@ -43,8 +40,17 @@ export default function ProductFilters({ categories }: ProductFiltersProps) {
     if (filters.sortOrder) params.set('sortOrder', filters.sortOrder)
     
     params.set('page', '1') // Reset to first page
-    
-    router.push(`/products?${params.toString()}`)
+
+    // Debounce search and price inputs (500ms delay)
+    const timer = setTimeout(() => {
+      router.push(`/products?${params.toString()}`)
+    }, filters.search || filters.minPrice || filters.maxPrice ? 500 : 0)
+
+    return () => clearTimeout(timer)
+  }, [filters, router])
+
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters((prev) => ({ ...prev, [key]: value }))
   }
 
   const clearFilters = () => {
@@ -60,18 +66,36 @@ export default function ProductFilters({ categories }: ProductFiltersProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 space-y-6">
-      <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+    <div className="bg-white rounded-2xl shadow-soft p-6 space-y-6 border-2 border-gray-100 sticky top-24">
+      <div>
+        <h2 className="text-xl font-extrabold text-gray-900 mb-1">Filters</h2>
+        <div className="w-12 h-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full"></div>
+      </div>
 
       {/* Search */}
       <div>
-        <Input
-          label="Search"
-          type="text"
-          placeholder="Search products..."
-          value={filters.search}
-          onChange={(e) => handleFilterChange('search', e.target.value)}
-        />
+        <div className="relative">
+          <Input
+            label="Search"
+            type="text"
+            placeholder="Search products..."
+            value={filters.search}
+            onChange={(e) => handleFilterChange('search', e.target.value)}
+          />
+          {filters.search && (
+            <button
+              onClick={() => handleFilterChange('search', '')}
+              className="absolute right-3 top-9 text-gray-400 hover:text-gray-600"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+        {filters.search && (
+          <p className="mt-1 text-xs text-gray-500">Searching as you type...</p>
+        )}
       </div>
 
       {/* Category */}
@@ -82,7 +106,7 @@ export default function ProductFilters({ categories }: ProductFiltersProps) {
         <select
           value={filters.category}
           onChange={(e) => handleFilterChange('category', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-400"
         >
           <option value="">All Categories</option>
           {categories.map((category) => (
@@ -124,7 +148,7 @@ export default function ProductFilters({ categories }: ProductFiltersProps) {
         <select
           value={filters.sortBy}
           onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
+          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-400 mb-2"
         >
           <option value="createdAt">Newest</option>
           <option value="price">Price</option>
@@ -133,7 +157,7 @@ export default function ProductFilters({ categories }: ProductFiltersProps) {
         <select
           value={filters.sortOrder}
           onChange={(e) => handleFilterChange('sortOrder', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:border-gray-400"
         >
           <option value="asc">Ascending</option>
           <option value="desc">Descending</option>
@@ -141,13 +165,13 @@ export default function ProductFilters({ categories }: ProductFiltersProps) {
       </div>
 
       {/* Action Buttons */}
-      <div className="space-y-2">
-        <Button onClick={applyFilters} className="w-full">
-          Apply Filters
-        </Button>
+      <div className="pt-4 border-t border-gray-200">
         <Button variant="outline" onClick={clearFilters} className="w-full">
-          Clear Filters
+          Clear All Filters
         </Button>
+        <p className="mt-2 text-xs text-center text-gray-500">
+          Filters apply automatically
+        </p>
       </div>
     </div>
   )
