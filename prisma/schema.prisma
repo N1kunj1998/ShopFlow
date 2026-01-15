@@ -71,3 +71,44 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
+model Category {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  description String?   @db.Text
+  parentId    String?
+  image       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children Category[]  @relation("CategoryTree")
+  products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id             String    @id @default(uuid())
+  name           String
+  slug           String    @unique
+  description    String    @db.Text
+  price          Decimal   @db.Decimal(10, 2)
+  compareAtPrice Decimal?  @db.Decimal(10, 2)
+  sku            String    @unique
+  stock          Int       @default(0)
+  categoryId     String
+  images         String[]  @default([])
+  featured       Boolean   @default(false)
+  active         Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@map("products")
+  @@index([categoryId])
+  @@index([slug])
+  @@index([active])
+}
+
