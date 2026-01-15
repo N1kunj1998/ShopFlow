@@ -1,6 +1,8 @@
+import './globals.css'
+
 export const metadata = {
   title: 'E-Commerce App',
-  description: 'Simple e-commerce frontend',
+  description: 'Modern e-commerce platform',
 }
 
 export default function RootLayout({
@@ -10,7 +12,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="antialiased">{children}</body>
     </html>
   )
 }
